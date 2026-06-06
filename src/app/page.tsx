@@ -1,19 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-
-const SUBURBS = [
-  'Muizenberg',
-  'Kalk Bay',
-  'St James',
-  'Fish Hoek',
-  "Simon's Town",
-  'Noordhoek',
-  'Kommetjie',
-  'Glencairn',
-  'Lakeside',
-  'Marina da Gama',
-];
+import { SUBURBS } from '@/lib/suburbs';
 
 interface Listing {
   title: string;

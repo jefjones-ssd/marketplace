@@ -1,21 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import fs from 'fs';
-import path from 'path';
-
-// Valid suburbs list as defined in the South Peninsula scope
-const VALID_SUBURBS = [
-  'Muizenberg',
-  'Kalk Bay',
-  'St James',
-  'Fish Hoek',
-  'Simon\'s Town',
-  'Noordhoek',
-  'Kommetjie',
-  'Glencairn',
-  'Lakeside',
-  'Marina da Gama'
-];
+import { SUBURBS } from '@/lib/suburbs';
 
 interface WaitlistEntry {
   name: string;
@@ -29,7 +14,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, email, suburb } = body;
 
-    // 1. Validation
+    // Validation
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       return NextResponse.json({ error: 'Name must be at least 2 characters.' }, { status: 400 });
     }
@@ -39,26 +24,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
     }
 
-    if (!suburb || !VALID_SUBURBS.includes(suburb)) {
-      return NextResponse.json({ error: 'Please select a valid South Peninsula suburb.' }, { status: 400 });
+    if (!suburb || !(SUBURBS as readonly string[]).includes(suburb)) {
+      return NextResponse.json(
+        { error: 'Please select a valid South Peninsula suburb.' },
+        { status: 400 }
+      );
     }
 
     const sanitizedEntry: WaitlistEntry = {
       name: name.trim(),
       email: email.trim().toLowerCase(),
       suburb,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
-    // 2. Database Insert (Supabase vs Mock Fallback)
+
+    // Supabase path
     if (isSupabaseConfigured && supabase) {
-      // In Supabase, the table is expected to be named 'waitlist'
-      // It should have columns: name, email, suburb, created_at
-      const { error } = await supabase
-        .from('waitlist')
-        .insert([sanitizedEntry]);
+      const { error } = await supabase.from('waitlist').insert([sanitizedEntry]);
 
       if (error) {
-        // If error is unique constraint violation (code 23505 in Postgres)
         if (error.code === '23505') {
           return NextResponse.json(
             { message: 'You are already on the waitlist!', isDuplicate: true },
@@ -66,46 +50,50 @@ export async function POST(request: NextRequest) {
           );
         }
         console.error('Supabase waitlist insert error:', error);
-        return NextResponse.json({ 
-          error: `Supabase database error: ${error.message} (Code: ${error.code})` 
-        }, { status: 500 });
-      }
-    } else {
-      // Local file fallback
-      const mockFilePath = path.join(process.cwd(), 'waitlist-mock.json');
-      let currentWaitlist: WaitlistEntry[] = [];
-
-      if (fs.existsSync(mockFilePath)) {
-        try {
-          const fileData = fs.readFileSync(mockFilePath, 'utf8');
-          currentWaitlist = JSON.parse(fileData);
-        } catch (e) {
-          console.error('Error reading mock waitlist file, initializing empty array:', e);
-          currentWaitlist = [];
-        }
-      }
-
-      // Check for duplicate email
-      const duplicateExists = currentWaitlist.some(
-        (entry) => entry.email === sanitizedEntry.email
-      );
-
-      if (duplicateExists) {
         return NextResponse.json(
-          { message: 'You are already on the waitlist!', isDuplicate: true },
-          { status: 200 }
+          { error: `Database error: ${error.message}` },
+          { status: 500 }
         );
       }
 
-      currentWaitlist.push(sanitizedEntry);
+      return NextResponse.json(
+        { message: 'Successfully joined the waitlist!', isDuplicate: false },
+        { status: 200 }
+      );
+    }
 
+    // Local file fallback — dev only, not available in serverless environments
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+      console.error('Mock file storage used in production — configure Supabase env vars.');
+      return NextResponse.json(
+        { error: 'Service not configured. Please try again later.' },
+        { status: 503 }
+      );
+    }
+
+    // Dynamic import so fs is never bundled in serverless builds
+    const fs = await import('fs');
+    const path = await import('path');
+    const mockFilePath = path.join(process.cwd(), 'waitlist-mock.json');
+    let currentWaitlist: WaitlistEntry[] = [];
+
+    if (fs.existsSync(mockFilePath)) {
       try {
-        fs.writeFileSync(mockFilePath, JSON.stringify(currentWaitlist, null, 2), 'utf8');
-      } catch (e) {
-        console.error('Error writing to mock waitlist file:', e);
-        return NextResponse.json({ error: 'Failed to write to mock storage.' }, { status: 500 });
+        currentWaitlist = JSON.parse(fs.readFileSync(mockFilePath, 'utf8'));
+      } catch {
+        currentWaitlist = [];
       }
     }
+
+    if (currentWaitlist.some((entry) => entry.email === sanitizedEntry.email)) {
+      return NextResponse.json(
+        { message: 'You are already on the waitlist!', isDuplicate: true },
+        { status: 200 }
+      );
+    }
+
+    currentWaitlist.push(sanitizedEntry);
+    fs.writeFileSync(mockFilePath, JSON.stringify(currentWaitlist, null, 2), 'utf8');
 
     return NextResponse.json(
       { message: 'Successfully joined the waitlist!', isDuplicate: false },
