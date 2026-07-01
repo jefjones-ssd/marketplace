@@ -39,9 +39,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
+  if (
+    pathname.startsWith('/admin') &&
+    pathname !== '/admin/login' &&
+    request.cookies.get('admin_session')?.value !== 'authenticated'
+  ) {
+    return NextResponse.redirect(new URL('/admin/login', request.url));
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/auth'],
+  matcher: ['/dashboard/:path*', '/auth', '/admin/:path*'],
 };
