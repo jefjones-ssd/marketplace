@@ -87,12 +87,6 @@ export default function DashboardPage() {
 
   return (
     <main className="px-5 py-8 sm:px-8">
-      {profileNotFound && (
-        <p className="text-sm text-[#5F5E5A]">
-          Profile not found. Please contact support.
-        </p>
-      )}
-
       {profile && (
         <div className="rounded-[20px] border border-[#C4D8D8] bg-white p-6">
           <div className="flex flex-wrap items-center gap-3">
@@ -111,9 +105,12 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-[#5F5E5A]">{profile.suburb}</p>
 
           {profile.verification_status === 'unverified' && (
-            <div className="mt-5 rounded-[13px] border border-[#C4D8D8] bg-[#F3F8F8] px-4 py-4 text-sm font-medium text-[#2C2C2A]">
+            <a
+              href="/dashboard/verify"
+              className="mt-5 block rounded-[13px] border border-[#C4D8D8] bg-[#F3F8F8] px-4 py-4 text-sm font-medium text-[#2C2C2A] hover:bg-[#DDEEED]"
+            >
               Get verified to start listing — upload your SA ID and selfie
-            </div>
+            </a>
           )}
         </div>
       )}
