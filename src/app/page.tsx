@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { SUBURBS } from '@/lib/suburbs';
 
 interface Listing {
@@ -71,8 +71,8 @@ const LISTINGS: Listing[] = [
   {
     title: "Classic 9′2″ single-fin longboard",
     suburb: 'Muizenberg',
-    price: 'R3 500',
-    cond: ['Surf-ready', 'Excellent'],
+    price: 'R3 200',
+    cond: ['Hardly used', 'Excellent condition'],
     img: '1677534712773-e616c25baae7',
     art: 'surfboard',
   },
@@ -80,15 +80,15 @@ const LISTINGS: Listing[] = [
     title: 'Emerald velvet three-seater sofa',
     suburb: 'Noordhoek',
     price: 'R6 800',
-    cond: ['Barely used', 'Excellent'],
+    cond: ['2 months old', 'Excellent condition'],
     img: '1555041469-a586c61ea9bc',
     art: 'armchair',
   },
   {
     title: 'Cream tufted accent armchair',
     suburb: 'Kalk Bay',
-    price: 'R2 400',
-    cond: ['Reupholstered', 'Very good'],
+    price: 'R1 400',
+    cond: ['Reupholstered', 'Very good condition'],
     img: '1567538096630-e0c55bd6374c',
     art: 'armchair',
   },
@@ -96,39 +96,39 @@ const LISTINGS: Listing[] = [
     title: 'Modern dining chairs · set of 4',
     suburb: "Simon's Town",
     price: 'R4 800',
-    cond: ['Matching set', 'Very good'],
+    cond: ['Matching set', 'Very good condition'],
     img: '1592078615290-033ee584e267',
     art: 'chair',
   },
   {
-    title: 'Steel commuter bicycle · 7-speed',
+    title: 'Road bike with steel frame',
     suburb: 'Fish Hoek',
     price: 'R2 900',
-    cond: ['Recently serviced', 'Good'],
+    cond: ['Recently serviced', 'Good condition'],
     img: '1485965120184-e220f721d03e',
     art: 'bike',
   },
   {
     title: 'Mature monstera in ceramic pot',
     suburb: 'Lakeside',
-    price: 'R650',
-    cond: ['Thriving', 'Very good'],
+    price: 'R450',
+    cond: ['Thriving', 'Very good condition'],
     img: '1614594975525-e45190c55d0b',
     art: 'plant',
   },
   {
-    title: 'Vinyl LP collection · 80+ records',
+    title: '80+ Classic rock vinyls',
     suburb: 'Kommetjie',
     price: 'R3 200',
-    cond: ['Well cared for', 'Good'],
+    cond: ['Well cared for', 'Good condition'],
     img: '1461360228754-6e81c478b882',
     art: 'record',
   },
   {
     title: 'Copper arc reading lamp',
     suburb: 'St James',
-    price: 'R1 250',
-    cond: ['Rewired', 'Excellent'],
+    price: 'R950',
+    cond: ['Rewired', 'Excellent condition'],
     img: '1542728928-1413d1894ed1',
     art: 'lamp',
   },
@@ -176,81 +176,6 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isDuplicate, setIsDuplicate] = useState(false);
 
-  const railRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
-  const prevBtnRef = useRef<HTMLButtonElement>(null);
-  const nextBtnRef = useRef<HTMLButtonElement>(null);
-
-  const updateCarouselUI = useCallback(() => {
-    const rail = railRef.current;
-    const bar = barRef.current;
-    const prevBtn = prevBtnRef.current;
-    const nextBtn = nextBtnRef.current;
-    if (!rail || !bar || !prevBtn || !nextBtn) return;
-
-    const max = rail.scrollWidth - rail.clientWidth;
-    const pct = max > 0 ? rail.scrollLeft / max : 0;
-    const track = bar.parentElement!;
-    const travel = Math.max(0, track.clientWidth - bar.clientWidth);
-    bar.style.transform = `translateX(${pct * travel}px)`;
-    prevBtn.disabled = rail.scrollLeft <= 2;
-    nextBtn.disabled = rail.scrollLeft >= max - 2;
-  }, []);
-
-  const getCardStep = useCallback(() => {
-    const rail = railRef.current;
-    if (!rail) return 384;
-    const first = rail.querySelector('.listing') as HTMLElement | null;
-    if (!first) return 384;
-    const gap = parseFloat(getComputedStyle(rail).columnGap) || 24;
-    return first.getBoundingClientRect().width + gap;
-  }, []);
-
-  useEffect(() => {
-    const rail = railRef.current;
-    if (!rail) return;
-
-    let isDown = false;
-    let startX = 0;
-    let startScroll = 0;
-
-    const onPointerDown = (e: PointerEvent) => {
-      isDown = true;
-      startX = e.clientX;
-      startScroll = rail.scrollLeft;
-      rail.classList.add('dragging');
-      rail.setPointerCapture(e.pointerId);
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (!isDown) return;
-      rail.scrollLeft = startScroll - (e.clientX - startX);
-    };
-
-    const endDrag = () => {
-      isDown = false;
-      rail.classList.remove('dragging');
-    };
-
-    rail.addEventListener('pointerdown', onPointerDown);
-    rail.addEventListener('pointermove', onPointerMove);
-    rail.addEventListener('pointerup', endDrag);
-    rail.addEventListener('pointercancel', endDrag);
-    rail.addEventListener('scroll', updateCarouselUI, { passive: true });
-    window.addEventListener('resize', updateCarouselUI);
-
-    requestAnimationFrame(updateCarouselUI);
-
-    return () => {
-      rail.removeEventListener('pointerdown', onPointerDown);
-      rail.removeEventListener('pointermove', onPointerMove);
-      rail.removeEventListener('pointerup', endDrag);
-      rail.removeEventListener('pointercancel', endDrag);
-      rail.removeEventListener('scroll', updateCarouselUI);
-      window.removeEventListener('resize', updateCarouselUI);
-    };
-  }, [updateCarouselUI]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -281,7 +206,7 @@ export default function Home() {
   return (
     <>
       {/* ── Header ── */}
-      <header className="site-header">
+      {/* <header className="site-header">
         <div className="wrap header-inner">
           <div className="wordmark">
             South&nbsp;Peninsula <span className="mk">Marketplace</span>
@@ -291,27 +216,26 @@ export default function Home() {
             South Peninsula only
           </div>
         </div>
-      </header>
+      </header> */}
 
       <main>
         {/* ── Hero + Waitlist ── */}
         <section className="wrap hero">
           {/* Left: hero copy */}
           <div>
-            <span className="eyebrow">
+            {/* <span className="eyebrow">
               <span className="eyebrow-bar" />
               Verified neighbours only
-            </span>
+            </span> */}
             <h1 className="headline">
-              Buy and sell locally,
+              Buy & sell safely, locally.
               <br />
-              <span className="soft">no scammers.</span>
+              <span className="soft">No scammers.</span>
             </h1>
-            <p className="lede">
-              Facebook Marketplace is full of fakes. We verify every seller&rsquo;s{' '}
-              <strong>SA identity</strong> before they list — so you always know exactly who
-              you&rsquo;re dealing with. Cash on collection. No deposits. No shipping.
-            </p>
+            <div className="lede">
+              <p><strong className="highlight">Finally, a local, trustworthy alternative to Facebook Marketplace.</strong></p>
+<p>Here, every seller is verified with against their ID. No fakes. No deposits. No nonsense. Pay on collection, from neighbours you can trust.</p>
+            </div>
 
             <div className="features">
               <div className="feature">
@@ -322,11 +246,7 @@ export default function Home() {
                   </svg>
                 </span>
                 <div>
-                  <h4>Verified identity check</h4>
-                  <p>
-                    Every seller passes an SA ID &amp; selfie match before listing — locking
-                    scammers out.
-                  </p>
+                  <h4>Every seller is SA ID-verified before they can list.</h4>
                 </div>
               </div>
 
@@ -338,11 +258,7 @@ export default function Home() {
                   </svg>
                 </span>
                 <div>
-                  <h4>Cash on collection only</h4>
-                  <p>
-                    No upfront payments or deposits — which means no fake receipts and no
-                    advance-fee scams.
-                  </p>
+                  <h4>Pay on collection only.</h4>
                 </div>
               </div>
 
@@ -354,11 +270,7 @@ export default function Home() {
                   </svg>
                 </span>
                 <div>
-                  <h4>100% hyper-local</h4>
-                  <p>
-                    Muizenberg through to Simon&rsquo;s Town, Noordhoek to Kommetjie. Your
-                    community, not the internet.
-                  </p>
+                  <h4>Your community, not the entire internet.</h4>
                 </div>
               </div>
             </div>
@@ -385,8 +297,8 @@ export default function Home() {
                 </h2>
                 <p>
                   {isDuplicate
-                    ? "We already have your email on the waitlist. We'll notify you when verification opens in your suburb."
-                    : "We've added you to the waitlist. Watch your inbox for an onboarding email as verification opens in your suburb."}
+                    ? "You're already on the waitlist. We'll notify you when verification opens in your suburb."
+                    : "You're on the waitlist. Watch your inbox for notification when onboarding opens in your suburb."}
                 </p>
                 <button className="reset-btn" onClick={() => setStatus('idle')}>
                   Add another email
@@ -396,7 +308,7 @@ export default function Home() {
               <>
                 <h2>Join the waitlist</h2>
                 <p className="sub">
-                  Get early access the moment listings go live in your suburb.
+                  Get notified the moment listings go live in your suburb.
                 </p>
 
                 <form className="wl-form" onSubmit={handleSubmit}>
@@ -423,13 +335,13 @@ export default function Home() {
                       required
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="sarah@peninsula.co.za"
+                      placeholder="joe@emailaddress.com"
                       autoComplete="email"
                     />
                   </div>
 
                   <div className="field">
-                    <label htmlFor="suburb">Your suburb</label>
+                    <label htmlFor="suburb">Your suburb (or nearest suburb)</label>
                     <div className="select-wrap">
                       <select
                         id="suburb"
@@ -513,7 +425,7 @@ export default function Home() {
                         Registering…
                       </>
                     ) : (
-                      'Request invitation'
+                      'Get notified - obligation free'
                     )}
                   </button>
                 </form>
@@ -533,6 +445,14 @@ export default function Home() {
                   </svg>
                   We&rsquo;ll never share your details. No spam, ever.
                 </div>
+                <div className="popi-link-row">
+            <a href="#popi" className="popi-link">
+              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="13" height="13">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM16 11V7a4 4 0 00-8 0v4" />
+              </svg>
+              Why we&rsquo;re collecting your information (POPI Act)
+            </a>
+          </div>
               </>
             )}
           </div>
@@ -542,55 +462,37 @@ export default function Home() {
         <section className="listings-section wrap">
           <div className="listings-head">
             <div className="lead">
-              <h2>A peek at what&rsquo;s coming</h2>
-              <p>Recent submissions from verified neighbours getting ready to sell.</p>
-            </div>
-            <div className="nav-btns">
-              <button
-                ref={prevBtnRef}
-                className="nav-btn"
-                aria-label="Previous"
-                onClick={() =>
-                  railRef.current?.scrollBy({ left: -getCardStep(), behavior: 'smooth' })
-                }
-              >
-                <svg
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button
-                ref={nextBtnRef}
-                className="nav-btn"
-                aria-label="Next"
-                onClick={() =>
-                  railRef.current?.scrollBy({ left: getCardStep(), behavior: 'smooth' })
-                }
-              >
-                <svg
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+              <h2>A peek at what&rsquo;s coming...</h2>
             </div>
           </div>
 
-          <div ref={railRef} className="rail">
-            {LISTINGS.map((listing, i) => (
-              <ListingCard key={i} listing={listing} />
-            ))}
+          <div className="rail-outer">
+            <div className="rail">
+              {[...LISTINGS, ...LISTINGS].map((listing, i) => (
+                <ListingCard key={i} listing={listing} />
+              ))}
+            </div>
           </div>
+        </section>
 
-          <div className="progress">
-            <div ref={barRef} className="bar" />
+        {/* ── POPI disclosure ── */}
+        <section id="popi" className="popi-section wrap">
+          <div className="popi-inner">
+            <h2 className="popi-heading">Your privacy &amp; the POPI Act</h2>
+            <div className="popi-grid">
+              <div className="popi-block">
+                <h3>Why we&rsquo;re collecting your information</h3>
+                <p>We&rsquo;re building a verified, local buying and selling platform for the South Peninsula. Your name, email, and suburb help us confirm there&rsquo;s enough interest in your area before we build anything, and to let you know when we&rsquo;re ready to launch near you.</p>
+              </div>
+              <div className="popi-block">
+                <h3>What we do with it</h3>
+                <p>We&rsquo;ll send you one confirmation email and updates about the launch. That&rsquo;s it. We won&rsquo;t sell your information, share it with third parties, or use it for anything other than keeping you informed about this platform.</p>
+              </div>
+              <div className="popi-block">
+                <h3>How to request deletion</h3>
+                <p>Email us at <a href="mailto:hello@southpeninsula.market" className="popi-mailto">hello@southpeninsula.market</a> with the subject &ldquo;Remove me&rdquo; and we&rsquo;ll delete your details within 7 days.</p>
+              </div>
+            </div>
           </div>
         </section>
       </main>
