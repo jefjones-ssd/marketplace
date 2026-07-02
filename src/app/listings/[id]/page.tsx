@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 // TODO: formatPrice and formatRelativeTime are duplicated from /listings/page.tsx — extract to src/lib/format.ts
@@ -53,14 +53,16 @@ function formatRelativeTime(dateString: string): string {
 }
 
 type ViewStatus = 'loading' | 'ready' | 'not-found' | 'error';
+type MessageStatus = 'idle' | 'loading' | 'error';
 
 export default function ListingDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const [listing, setListing] = useState<Listing | null>(null);
   const [viewStatus, setViewStatus] = useState<ViewStatus>('loading');
-  const [messageClicked, setMessageClicked] = useState(false);
+  const [messageStatus, setMessageStatus] = useState<MessageStatus>('idle');
   const [reportClicked, setReportClicked] = useState(false);
 
   useEffect(() => {
@@ -108,6 +110,43 @@ export default function ListingDetailPage() {
 
     loadListing();
   }, [id]);
+
+  const handleMessageSeller = async () => {
+    if (!supabase || !listing) return;
+
+    setMessageStatus('loading');
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      router.push('/auth');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/conversations/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listing_id: listing.id,
+          seller_id: listing.seller_id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.conversationId) {
+        setMessageStatus('error');
+        return;
+      }
+
+      router.push(`/dashboard/messages/${data.conversationId}`);
+    } catch {
+      setMessageStatus('error');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F3F8F8]">
@@ -201,15 +240,16 @@ export default function ListingDetailPage() {
 
               <button
                 type="button"
-                onClick={() => setMessageClicked(true)}
-                className="mt-6 w-full rounded-[13px] bg-[#2C2C2A] py-3 text-sm font-bold text-white transition-colors hover:bg-[#1a1a18]"
+                onClick={handleMessageSeller}
+                disabled={messageStatus === 'loading'}
+                className="mt-6 w-full rounded-[13px] bg-[#2C2C2A] py-3 text-sm font-bold text-white transition-colors hover:bg-[#1a1a18] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Message seller
+                {messageStatus === 'loading' ? 'Starting conversation…' : 'Message seller'}
               </button>
 
-              {messageClicked && (
-                <p className="mt-3 text-sm text-[#5F5E5A]">
-                  Messaging is coming soon.
+              {messageStatus === 'error' && (
+                <p className="mt-3 text-sm text-rose-600">
+                  Could not start conversation. Please try again.
                 </p>
               )}
 
