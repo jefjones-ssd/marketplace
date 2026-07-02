@@ -55,6 +55,12 @@ function formatRelativeTime(dateString: string): string {
 type ViewStatus = 'loading' | 'ready' | 'not-found' | 'error';
 type MessageStatus = 'idle' | 'loading' | 'error';
 
+const GENERIC_MESSAGE_ERROR = 'Could not start conversation. Please try again.';
+const FRIENDLY_MESSAGE_ERRORS = new Set([
+  'You cannot message your own listing',
+  'Listing not found',
+]);
+
 export default function ListingDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -63,6 +69,7 @@ export default function ListingDetailPage() {
   const [listing, setListing] = useState<Listing | null>(null);
   const [viewStatus, setViewStatus] = useState<ViewStatus>('loading');
   const [messageStatus, setMessageStatus] = useState<MessageStatus>('idle');
+  const [messageError, setMessageError] = useState(GENERIC_MESSAGE_ERROR);
   const [reportClicked, setReportClicked] = useState(false);
 
   useEffect(() => {
@@ -138,12 +145,18 @@ export default function ListingDetailPage() {
       const data = await response.json();
 
       if (!response.ok || !data.conversationId) {
+        setMessageError(
+          FRIENDLY_MESSAGE_ERRORS.has(data?.error)
+            ? data.error
+            : GENERIC_MESSAGE_ERROR
+        );
         setMessageStatus('error');
         return;
       }
 
       router.push(`/dashboard/messages/${data.conversationId}`);
     } catch {
+      setMessageError(GENERIC_MESSAGE_ERROR);
       setMessageStatus('error');
     }
   };
@@ -248,9 +261,7 @@ export default function ListingDetailPage() {
               </button>
 
               {messageStatus === 'error' && (
-                <p className="mt-3 text-sm text-rose-600">
-                  Could not start conversation. Please try again.
-                </p>
+                <p className="mt-3 text-sm text-rose-600">{messageError}</p>
               )}
 
               <div className="mt-4 text-center">

@@ -12,6 +12,10 @@ export async function POST(request: NextRequest) {
   const profileId = formData.get('profile_id');
   const action = formData.get('action');
 
+  if (!profileId) {
+    return NextResponse.json({ error: 'profile_id is required' }, { status: 400 });
+  }
+
   if (action !== 'approve' && action !== 'reject') {
     return NextResponse.json({ error: 'Unsupported action' }, { status: 400 });
   }

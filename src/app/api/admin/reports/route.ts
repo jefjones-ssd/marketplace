@@ -12,6 +12,10 @@ export async function POST(request: NextRequest) {
   const reportId = formData.get('report_id');
   const action = formData.get('action');
 
+  if (!reportId) {
+    return NextResponse.json({ error: 'report_id is required' }, { status: 400 });
+  }
+
   if (action !== 'reviewed') {
     return NextResponse.json({ error: 'Unsupported action' }, { status: 400 });
   }

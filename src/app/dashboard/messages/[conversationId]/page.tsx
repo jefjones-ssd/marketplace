@@ -40,6 +40,7 @@ export default function ConversationThreadPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [sendStatus, setSendStatus] = useState<SendStatus>('idle');
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -157,6 +158,7 @@ export default function ConversationThreadPage() {
     if (!body) return;
 
     setSendStatus('sending');
+    setSendError(null);
 
     const { error } = await supabase.from('messages').insert([
       {
@@ -167,7 +169,9 @@ export default function ConversationThreadPage() {
       },
     ]);
 
-    if (!error) {
+    if (error) {
+      setSendError('Message could not be sent. Please try again.');
+    } else {
       setDraft('');
     }
 
@@ -246,6 +250,10 @@ export default function ConversationThreadPage() {
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {sendError && (
+        <p className="px-1 pb-2 text-sm text-rose-600">{sendError}</p>
+      )}
 
       <form
         onSubmit={handleSend}

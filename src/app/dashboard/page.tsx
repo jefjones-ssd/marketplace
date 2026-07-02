@@ -46,8 +46,10 @@ export default function DashboardPage() {
         .eq('id', session.user.id)
         .single();
 
-      if (!data && !error) {
+      if (error || !data) {
         setProfileNotFound(true);
+        setLoading(false);
+        return;
       }
 
       setProfile(data);

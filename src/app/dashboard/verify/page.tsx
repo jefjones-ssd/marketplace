@@ -42,18 +42,23 @@ export default function VerifyPage() {
 
       setUserId(session.user.id);
 
-      const { data: profile } = await client
+      const { data: profile, error: profileError } = await client
         .from('profiles')
         .select('verification_status')
         .eq('id', session.user.id)
         .single();
 
-      if (profile?.verification_status === 'verified') {
+      if (profileError || !profile) {
+        setCheckStatus('error');
+        return;
+      }
+
+      if (profile.verification_status === 'verified') {
         router.push('/dashboard');
         return;
       }
 
-      if (profile?.verification_status === 'pending') {
+      if (profile.verification_status === 'pending') {
         setCheckStatus('pending');
         return;
       }
@@ -118,14 +123,17 @@ export default function VerifyPage() {
       return;
     }
 
-    const { error: updateError } = await client
+    const { data: updateData, error: updateError } = await client
       .from('profiles')
       .update({ verification_status: 'pending' })
-      .eq('id', userId);
+      .eq('id', userId)
+      .select('id');
 
-    if (updateError) {
+    if (updateError || !updateData || updateData.length === 0) {
       setSubmitStatus('error');
-      setErrorMessage(updateError.message);
+      setErrorMessage(
+        updateError?.message ?? 'Could not update your profile. Please try again.'
+      );
       return;
     }
 
