@@ -123,17 +123,12 @@ export default function VerifyPage() {
       return;
     }
 
-    const { data: updateData, error: updateError } = await client
-      .from('profiles')
-      .update({ verification_status: 'pending' })
-      .eq('id', userId)
-      .select('id');
+    const response = await fetch('/api/verify/submit', { method: 'POST' });
 
-    if (updateError || !updateData || updateData.length === 0) {
+    if (!response.ok) {
+      const { error: submitError } = await response.json();
       setSubmitStatus('error');
-      setErrorMessage(
-        updateError?.message ?? 'Could not update your profile. Please try again.'
-      );
+      setErrorMessage(submitError ?? 'Could not update your profile. Please try again.');
       return;
     }
 
