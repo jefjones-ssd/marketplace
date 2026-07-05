@@ -17,7 +17,6 @@ type SubmitStatus = 'idle' | 'submitting' | 'error' | 'success';
 export default function VerifyPage() {
   const router = useRouter();
   const [checkStatus, setCheckStatus] = useState<CheckStatus>('checking');
-  const [userId, setUserId] = useState<string | null>(null);
   const [idFile, setIdFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle');
@@ -39,8 +38,6 @@ export default function VerifyPage() {
         router.push('/auth');
         return;
       }
-
-      setUserId(session.user.id);
 
       const { data: profile, error: profileError } = await client
         .from('profiles')
@@ -73,7 +70,7 @@ export default function VerifyPage() {
     e.preventDefault();
 
     const client = supabase;
-    if (!client || !userId) {
+    if (!client) {
       setSubmitStatus('error');
       setErrorMessage('Service not configured. Please try again later.');
       return;
@@ -91,10 +88,7 @@ export default function VerifyPage() {
       return;
     }
 
-    const idExt = EXT_FROM_MIME[idFile.type];
-    const selfieExt = EXT_FROM_MIME[selfieFile.type];
-
-    if (!idExt || !selfieExt) {
+    if (!EXT_FROM_MIME[idFile.type] || !EXT_FROM_MIME[selfieFile.type]) {
       setSubmitStatus('error');
       setErrorMessage('Please upload JPEG, PNG, or WEBP images only.');
       return;
@@ -103,23 +97,19 @@ export default function VerifyPage() {
     setSubmitStatus('submitting');
     setErrorMessage('');
 
-    const { error: idUploadError } = await client.storage
-      .from('verifications')
-      .upload(`${userId}/id.${idExt}`, idFile, { upsert: true });
+    const formData = new FormData();
+    formData.append('idFile', idFile);
+    formData.append('selfieFile', selfieFile);
 
-    if (idUploadError) {
+    const uploadResponse = await fetch('/api/verify/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!uploadResponse.ok) {
+      const { error: uploadError } = await uploadResponse.json();
       setSubmitStatus('error');
-      setErrorMessage(idUploadError.message);
-      return;
-    }
-
-    const { error: selfieUploadError } = await client.storage
-      .from('verifications')
-      .upload(`${userId}/selfie.${selfieExt}`, selfieFile, { upsert: true });
-
-    if (selfieUploadError) {
-      setSubmitStatus('error');
-      setErrorMessage(selfieUploadError.message);
+      setErrorMessage(uploadError ?? 'Could not upload your documents. Please try again.');
       return;
     }
 
